@@ -51,7 +51,7 @@
   margin: 0;
   padding: 0;
   list-style: None;
-  /* display: none; */
+  display: none;
   max-height: 15em;
   overflow-y: auto;
   border: 0.05em solid #777;
