@@ -6,38 +6,51 @@ export interface SelectOption {
   value: string | number;
 }
 
-interface Props {
+type MultipleSelectProps = {
+  multiple: true;
+  value: SelectOption[];
+  onChange: (value: SelectOption[]) => void;
+};
+
+type SingleSelectProps = {
+  multiple?: false;
   value?: SelectOption;
   onChange: (value: SelectOption | undefined) => void;
-  options: SelectOption[];
-}
+};
 
-const Select = ({ value, onChange, options }: Props) => {
+type SelectProps = SingleSelectProps | MultipleSelectProps;
+type Props = {
+  options: SelectOption[];
+} & SelectProps;
+
+const Select = ({ multiple, value, onChange, options }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const clearOptions = (
-    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ) => {
+
+  const clearOptions = () => {
     // With stopPropagation method is going to stop the click event from going
     // all the way to the parent element, without this method when clicking
     // the clear button the div element would open up.
-    event.stopPropagation();
-    onChange(undefined);
+    multiple ? onChange([]) : onChange(undefined);
   };
 
-  const selectOption = (
-    event: React.MouseEvent<HTMLLIElement, MouseEvent>,
-    option: SelectOption
-  ) => {
-    if (option !== value) {
-      event.stopPropagation();
-      onChange(option);
-      setIsOpen(false);
+  const selectOption = (option: SelectOption) => {
+    if (multiple) {
+      if (value.includes(option)) {
+        onChange(value.filter((o) => o !== option));
+      } else {
+        onChange([...value, option]);
+      }
+    } else {
+      if (option !== value) {
+        onChange(option);
+        setIsOpen(false);
+      }
     }
   };
 
   const isOptionSelected = (option: SelectOption) => {
-    return option == value;
+    return multiple ? value.includes(option) : option == value;
   };
 
   // Using a useEffect so that anytime we change our open property we change the highlighted index to 0.
@@ -51,17 +64,46 @@ const Select = ({ value, onChange, options }: Props) => {
       tabIndex={0}
       className={styles.container}
     >
-      <span className={styles.value}>{value?.label}</span>
-      <button onClick={(e) => clearOptions(e)} className={styles['clear-btn']}>
+      <span className={styles.value}>
+        {multiple
+          ? value.map((v) => (
+              <button
+                key={v.value}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  selectOption(v);
+                }}
+                className={styles['option-badge']}
+              >
+                {v.label}
+                <span className={styles['remove-btn']}>&times;</span>
+              </button>
+            ))
+          : value?.label}
+      </span>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          clearOptions();
+        }}
+        className={styles['clear-btn']}
+      >
         &times;
       </button>
+
       <div className={styles.divider}></div>
+
       <div className={styles.caret}></div>
+
       <ul className={`${styles.options} ${isOpen ? styles.show : ''}`}>
         {options.map((o, i) => (
           <li
             onMouseEnter={() => setHighlightedIndex(i)}
-            onClick={(e) => selectOption(e, o)}
+            onClick={(e) => {
+              e.stopPropagation();
+              selectOption(o);
+            }}
             key={o.value}
             className={`${styles.option} ${
               isOptionSelected(o) ? styles.selected : ''
