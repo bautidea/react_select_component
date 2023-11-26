@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './Select.module.css';
 
 export interface SelectOption {
@@ -26,6 +26,7 @@ type Props = {
 const Select = ({ multiple, value, onChange, options }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const clearOptions = () => {
     // With stopPropagation method is going to stop the click event from going
@@ -60,8 +61,46 @@ const Select = ({ multiple, value, onChange, options }: Props) => {
     if (isOpen) setHighlightedIndex(0);
   }, [isOpen]);
 
+  // This useEffect will handle our keyboard accessibility.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target != containerRef.current) return;
+      switch (e.code) {
+        case 'Enter':
+        case 'Space':
+          setIsOpen((prev) => !prev);
+          if (isOpen) selectOption(options[highlightedIndex]);
+          break;
+
+        case 'ArrowUp':
+        case 'ArrowDown': {
+          if (!isOpen) {
+            setIsOpen(true);
+            break;
+          }
+
+          const newValue = highlightedIndex + (e.code === 'ArrowDown' ? 1 : -1);
+          if (newValue >= 0 && newValue < options.length) {
+            setHighlightedIndex(newValue);
+          }
+          break;
+        }
+
+        case 'Escape':
+          setIsOpen(false);
+          break;
+      }
+    };
+    containerRef.current?.addEventListener('keydown', handler);
+
+    return () => {
+      containerRef.current?.removeEventListener('keydown', handler);
+    };
+  }, [isOpen, highlightedIndex]);
+
   return (
     <div
+      ref={containerRef}
       onBlur={() => setIsOpen(false)} // --> When click outside this object we change state.
       onClick={() => setIsOpen(!isOpen)}
       tabIndex={0}
