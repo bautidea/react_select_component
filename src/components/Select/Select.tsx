@@ -38,8 +38,10 @@ const Select = ({ multiple, value, onChange, options }: Props) => {
     if (multiple) {
       if (value.includes(option)) {
         onChange(value.filter((o) => o !== option));
+        setIsOpen(false);
       } else {
         onChange([...value, option]);
+        setIsOpen(false);
       }
     } else {
       if (option !== value) {
@@ -57,6 +59,7 @@ const Select = ({ multiple, value, onChange, options }: Props) => {
   useEffect(() => {
     if (isOpen) setHighlightedIndex(0);
   }, [isOpen]);
+
   return (
     <div
       onBlur={() => setIsOpen(false)} // --> When click outside this object we change state.
